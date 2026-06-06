@@ -1,0 +1,64 @@
+# code: language=yaml
+#
+# Initialize $state with spec defaults.
+#
+
+{{- $xr := getCompositeResource . }}
+{{- $metadata := $xr.metadata | default dict }}
+{{- $spec := $xr.spec | default dict }}
+
+# ==============================================================================
+# Core defaults
+# ==============================================================================
+{{- $name := $metadata.name | default "ecr-registry-cache" }}
+{{- $accountId := $spec.accountId | default "" }}
+{{- $region := $spec.region | default "" }}
+{{- $managementPolicies := $spec.managementPolicies | default (list "*") }}
+
+{{- $providerConfigSpec := $spec.providerConfigRef | default dict }}
+{{- $providerConfigRef := dict
+  "name" ($providerConfigSpec.name | default "default")
+  "kind" ($providerConfigSpec.kind | default "ProviderConfig")
+}}
+
+# Default labels/tags: managed=true + <kind>=<name>
+{{- $defaults := dict
+  "hops.ops.com.ai/managed" "true"
+  (printf "hops.ops.com.ai/%s" (lower $xr.kind)) $name
+}}
+{{- $labels := merge (dict) $defaults ($spec.labels | default dict) }}
+{{- $tags := merge (dict) $defaults ($spec.tags | default dict) }}
+
+# Enhanced scanning is registry-wide and disabled by default.
+{{- $scanningSpec := $spec.enhancedScanning | default dict }}
+{{- $scanningEnabled := false }}
+{{- if hasKey $scanningSpec "enabled" }}
+  {{- $scanningEnabled = $scanningSpec.enabled }}
+{{- end }}
+
+# ==============================================================================
+# Initialize $state namespace
+# ==============================================================================
+{{- $state := dict
+  "spec" (dict
+    "raw" $spec
+    "effective" (dict
+      "name" $name
+      "accountId" $accountId
+      "region" $region
+      "managementPolicies" $managementPolicies
+      "providerConfigRef" $providerConfigRef
+      "labels" $labels
+      "tags" $tags
+      "enhancedScanning" (dict
+        "enabled" $scanningEnabled
+        "scanFrequency" ($scanningSpec.scanFrequency | default "CONTINUOUS_SCAN")
+        "repositoryFilters" ($scanningSpec.repositoryFilters | default list)
+      )
+      "rules" ($spec.rules | default list)
+    )
+  )
+  "observed" (dict)
+  "ecrRegistryCache" (dict)
+  "status" (dict)
+}}

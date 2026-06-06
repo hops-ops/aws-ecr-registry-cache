@@ -1,0 +1,245 @@
+apiVersion: apiextensions.crossplane.io/v2
+kind: CompositeResourceDefinition
+metadata:
+  name: ecrregistrycaches.aws.hops.ops.com.ai
+spec:
+  group: aws.hops.ops.com.ai
+  names:
+    categories:
+      - crossplane
+    kind: ECRRegistryCache
+    plural: ecrregistrycaches
+  scope: Namespaced
+  defaultCompositeDeletePolicy: Foreground
+  versions:
+  - name: v1alpha1
+    referenceable: true
+    served: true
+    schema:
+      openAPIV3Schema:
+        description: ECRRegistryCache configures ECR pull-through cache rules for platform image registries.
+        type: object
+        properties:
+          spec:
+            description: ECRRegistryCacheSpec defines pull-through cache rules for one AWS account and region.
+            type: object
+            properties:
+              accountId:
+                description: AWS account ID for the private ECR registry.
+                type: string
+                pattern: "^[0-9]{12}$"
+              region:
+                description: AWS region where ECR pull-through cache rules are managed.
+                type: string
+                minLength: 1
+              providerConfigRef:
+                description: Reference to the AWS ProviderConfig. Defaults to ProviderConfig/default.
+                type: object
+                properties:
+                  name:
+                    description: Name of the ProviderConfig.
+                    type: string
+                    default: default
+                  kind:
+                    description: Kind of the ProviderConfig.
+                    type: string
+                    default: ProviderConfig
+              managementPolicies:
+                description: Management policies for all composed resources. Defaults to ["*"].
+                type: array
+                items:
+                  type: string
+                  enum:
+                  - "*"
+                  - Create
+                  - Observe
+                  - Update
+                  - Delete
+                  - LateInitialize
+                default:
+                - "*"
+              labels:
+                description: Custom labels applied to all managed resources.
+                type: object
+                additionalProperties:
+                  type: string
+                x-kubernetes-preserve-unknown-fields: true
+              tags:
+                description: Custom tags reserved for taggable composed resources. Repository creation template resourceTags are explicit per rule.
+                type: object
+                additionalProperties:
+                  type: string
+                x-kubernetes-preserve-unknown-fields: true
+              enhancedScanning:
+                description: Optional registry-wide ECR enhanced scanning configuration. Disabled by default.
+                type: object
+                properties:
+                  enabled:
+                    description: Whether this XR owns ECR registry scanning configuration.
+                    type: boolean
+                    default: false
+                  scanFrequency:
+                    description: Frequency for enhanced scanning rules.
+                    type: string
+                    enum:
+                    - CONTINUOUS_SCAN
+                    - SCAN_ON_PUSH
+                    default: CONTINUOUS_SCAN
+                  repositoryFilters:
+                    description: Explicit repository filters for enhanced scanning. Defaults to one WILDCARD filter per rule prefix.
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        filter:
+                          description: Repository filter expression.
+                          type: string
+                        filterType:
+                          description: ECR scanning repository filter type.
+                          type: string
+                          enum:
+                          - WILDCARD
+                          default: WILDCARD
+                      required:
+                      - filter
+              rules:
+                description: Pull-through cache rules to create.
+                type: array
+                minItems: 1
+                items:
+                  type: object
+                  properties:
+                    name:
+                      description: Stable name used for composed resource keys and status entries.
+                      type: string
+                      minLength: 1
+                      maxLength: 40
+                      pattern: "^[a-z0-9]([-a-z0-9]*[a-z0-9])?$"
+                    ecrRepositoryPrefix:
+                      description: ECR namespace prefix for cached images, such as ghcr or docker-hub.
+                      type: string
+                      minLength: 1
+                    upstreamRegistryUrl:
+                      description: AWS-supported upstream registry URL.
+                      type: string
+                      minLength: 1
+                    credentialArn:
+                      description: Secrets Manager ARN for authenticated upstream registries.
+                      type: string
+                    customRoleArn:
+                      description: IAM role ARN for ECR-to-ECR pull-through cache where required.
+                      type: string
+                    upstreamRepositoryPrefix:
+                      description: Optional upstream repository prefix for supported ECR-to-ECR pull-through cache rules.
+                      type: string
+                    forProvider:
+                      description: Provider-specific PullThroughCacheRule overrides merged after typed defaults.
+                      type: object
+                      x-kubernetes-preserve-unknown-fields: true
+                    repositoryCreationTemplate:
+                      description: Optional ECR repository creation template for repositories auto-created on first pull.
+                      type: object
+                      properties:
+                        enabled:
+                          description: Whether to create a RepositoryCreationTemplate for this rule prefix.
+                          type: boolean
+                          default: false
+                        description:
+                          description: Description applied to repositories created from this template.
+                          type: string
+                        customRoleArn:
+                          description: Custom IAM role used by ECR when applying the repository creation template.
+                          type: string
+                        encryptionConfiguration:
+                          description: Encryption configuration blocks for created repositories.
+                          type: array
+                          items:
+                            type: object
+                            x-kubernetes-preserve-unknown-fields: true
+                        imageTagMutability:
+                          description: Tag mutability for repositories created from this template.
+                          type: string
+                          enum:
+                          - MUTABLE
+                          - IMMUTABLE
+                          - IMMUTABLE_WITH_EXCLUSION
+                          - MUTABLE_WITH_EXCLUSION
+                        imageTagMutabilityExclusionFilter:
+                          description: Filters used with *_WITH_EXCLUSION image tag mutability modes.
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              filter:
+                                type: string
+                              filterType:
+                                type: string
+                                enum:
+                                - WILDCARD
+                                default: WILDCARD
+                            required:
+                            - filter
+                        lifecyclePolicy:
+                          description: Lifecycle policy JSON applied to repositories created from this template.
+                          type: string
+                        repositoryPolicy:
+                          description: Repository policy JSON applied to repositories created from this template.
+                          type: string
+                        resourceTags:
+                          description: Explicit tags applied to repositories created from this template. Leave unset unless first-pull repository creation can tag repositories in this account.
+                          type: object
+                          additionalProperties:
+                            type: string
+                          x-kubernetes-preserve-unknown-fields: true
+                  required:
+                  - name
+                  - ecrRepositoryPrefix
+                  - upstreamRegistryUrl
+            required:
+            - accountId
+            - region
+            - rules
+          status:
+            description: ECRRegistryCacheStatus exposes registry rewrite outputs and observed rule state.
+            type: object
+            properties:
+              ready:
+                description: Whether all enabled composed resources are ready.
+                type: boolean
+              registry:
+                type: object
+                properties:
+                  id:
+                    description: Observed ECR registry ID.
+                    type: string
+                  host:
+                    description: Private ECR registry host for image rewrites.
+                    type: string
+              scanning:
+                type: object
+                properties:
+                  enabled:
+                    description: Whether enhanced scanning is enabled by this XR.
+                    type: boolean
+                  scanType:
+                    description: Observed registry scanning type.
+                    type: string
+              rules:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    name:
+                      type: string
+                    ready:
+                      type: boolean
+                    ecrRepositoryPrefix:
+                      type: string
+                    upstreamRegistryUrl:
+                      type: string
+                    pullPrefix:
+                      type: string
+                    createdAt:
+                      type: string
+        required:
+        - spec

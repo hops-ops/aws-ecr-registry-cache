@@ -1,0 +1,30 @@
+# code: language=yaml
+#
+# Optional registry-wide ECR enhanced scanning configuration.
+#
+
+{{- if $state.ecrRegistryCache.enhancedScanning.enabled }}
+---
+apiVersion: ecr.aws.m.upbound.io/v1beta1
+kind: RegistryScanningConfiguration
+metadata:
+  name: {{ $state.ecrRegistryCache.name }}
+  annotations:
+    {{ setResourceNameAnnotation "registry-scanning-configuration" }}
+  labels: {{ $state.ecrRegistryCache.labels | toJson }}
+spec:
+  managementPolicies: {{ $state.ecrRegistryCache.managementPolicies | toJson }}
+  forProvider:
+    region: {{ $state.ecrRegistryCache.region }}
+    scanType: ENHANCED
+    rule:
+      - scanFrequency: {{ $state.ecrRegistryCache.enhancedScanning.scanFrequency }}
+        repositoryFilter:
+          {{- range $filter := $state.ecrRegistryCache.enhancedScanning.repositoryFilters }}
+          - filter: {{ $filter.filter }}
+            filterType: {{ $filter.filterType | default "WILDCARD" }}
+          {{- end }}
+  providerConfigRef:
+    name: {{ $state.ecrRegistryCache.providerConfigRef.name }}
+    kind: {{ $state.ecrRegistryCache.providerConfigRef.kind }}
+{{- end }}

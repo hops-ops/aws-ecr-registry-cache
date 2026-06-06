@@ -1,0 +1,52 @@
+# code: language=yaml
+#
+# Compute $state.status from observed resource state and rewrite outputs.
+#
+
+{{- $cache := $state.ecrRegistryCache }}
+{{- $obs := $state.observed }}
+
+{{- $ready := true }}
+{{- $registryId := "" }}
+{{- $rulesStatus := list }}
+{{- range $rule := $cache.rules }}
+  {{- $ruleObs := get ($obs.rules | default dict) $rule.name | default dict }}
+  {{- $templateObs := get ($obs.templates | default dict) $rule.name | default dict }}
+  {{- $ruleReady := $ruleObs.ready | default false }}
+  {{- if not $ruleReady }}
+    {{- $ready = false }}
+  {{- end }}
+  {{- if and $rule.repositoryCreationTemplate.enabled (not ($templateObs.ready | default false)) }}
+    {{- $ready = false }}
+  {{- end }}
+  {{- if and (eq $registryId "") ($ruleObs.registryId | default "") }}
+    {{- $registryId = $ruleObs.registryId }}
+  {{- end }}
+  {{- $rulesStatus = append $rulesStatus (dict
+    "name" $rule.name
+    "ready" $ruleReady
+    "ecrRepositoryPrefix" ($ruleObs.ecrRepositoryPrefix | default $rule.ecrRepositoryPrefix)
+    "upstreamRegistryUrl" ($ruleObs.upstreamRegistryUrl | default $rule.upstreamRegistryUrl)
+    "pullPrefix" $rule.pullPrefix
+    "createdAt" ($ruleObs.createdAt | default "")
+  ) }}
+{{- end }}
+
+{{- if $cache.enhancedScanning.enabled }}
+  {{- if not ($obs.scanning.ready | default false) }}
+    {{- $ready = false }}
+  {{- end }}
+{{- end }}
+
+{{- $state = set $state "status" (dict
+  "ready" $ready
+  "registry" (dict
+    "id" $registryId
+    "host" $cache.registryHost
+  )
+  "scanning" (dict
+    "enabled" $cache.enhancedScanning.enabled
+    "scanType" ($obs.scanning.scanType | default "")
+  )
+  "rules" $rulesStatus
+) }}

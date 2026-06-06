@@ -1,0 +1,25 @@
+apiVersion: aws.hops.ops.com.ai/v1alpha1
+kind: ECRRegistryCache
+metadata:
+  name: platform
+  namespace: default
+spec:
+  accountId: "123456789012"
+  region: us-east-2
+  tags:
+    team: platform
+  rules:
+    - name: docker-hub
+      ecrRepositoryPrefix: docker-hub
+      upstreamRegistryUrl: registry-1.docker.io
+      credentialArn: arn:aws:secretsmanager:us-east-2:123456789012:secret:ecr-pullthroughcache/docker-hub-AbCdEf
+      repositoryCreationTemplate:
+        enabled: true
+        imageTagMutability: MUTABLE
+    - name: ghcr
+      ecrRepositoryPrefix: ghcr
+      upstreamRegistryUrl: ghcr.io
+      credentialArn: arn:aws:secretsmanager:us-east-2:123456789012:secret:ecr-pullthroughcache/ghcr-AbCdEf
+      repositoryCreationTemplate:
+        enabled: true
+        imageTagMutability: MUTABLE

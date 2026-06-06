@@ -1,0 +1,43 @@
+apiVersion: aws.hops.ops.com.ai/v1alpha1
+kind: ECRRegistryCache
+metadata:
+  name: platform
+  namespace: default
+spec:
+  accountId: "123456789012"
+  region: us-east-2
+  providerConfigRef:
+    name: default
+    kind: ProviderConfig
+  rules:
+    - name: ecr-public
+      ecrRepositoryPrefix: ecr-public
+      upstreamRegistryUrl: public.ecr.aws
+      repositoryCreationTemplate:
+        enabled: true
+        lifecyclePolicy: |
+          {
+            "rules": [
+              {
+                "rulePriority": 1,
+                "description": "Expire untagged cached images after 14 days",
+                "selection": {
+                  "tagStatus": "untagged",
+                  "countType": "sinceImagePushed",
+                  "countUnit": "days",
+                  "countNumber": 14
+                },
+                "action": {"type": "expire"}
+              }
+            ]
+          }
+    - name: kubernetes
+      ecrRepositoryPrefix: kubernetes
+      upstreamRegistryUrl: registry.k8s.io
+      repositoryCreationTemplate:
+        enabled: true
+    - name: quay
+      ecrRepositoryPrefix: quay
+      upstreamRegistryUrl: quay.io
+      repositoryCreationTemplate:
+        enabled: true

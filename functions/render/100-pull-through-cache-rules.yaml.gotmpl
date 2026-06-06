@@ -1,0 +1,36 @@
+# code: language=yaml
+#
+# ECR pull-through cache rules.
+#
+
+{{- range $rule := $state.ecrRegistryCache.rules }}
+---
+apiVersion: ecr.aws.m.upbound.io/v1beta1
+kind: PullThroughCacheRule
+metadata:
+  name: {{ $rule.resourceName }}
+  annotations:
+    {{ setResourceNameAnnotation (printf "rule-%s" $rule.name) }}
+  labels: {{ $state.ecrRegistryCache.labels | toJson }}
+spec:
+  managementPolicies: {{ $state.ecrRegistryCache.managementPolicies | toJson }}
+  forProvider:
+    region: {{ $state.ecrRegistryCache.region }}
+    ecrRepositoryPrefix: {{ $rule.ecrRepositoryPrefix }}
+    upstreamRegistryUrl: {{ $rule.upstreamRegistryUrl }}
+    {{- if $rule.credentialArn }}
+    credentialArn: {{ $rule.credentialArn }}
+    {{- end }}
+    {{- if $rule.customRoleArn }}
+    customRoleArn: {{ $rule.customRoleArn }}
+    {{- end }}
+    {{- if $rule.upstreamRepositoryPrefix }}
+    upstreamRepositoryPrefix: {{ $rule.upstreamRepositoryPrefix }}
+    {{- end }}
+    {{- with $rule.forProvider }}
+    {{ toYaml . | nindent 4 }}
+    {{- end }}
+  providerConfigRef:
+    name: {{ $state.ecrRegistryCache.providerConfigRef.name }}
+    kind: {{ $state.ecrRegistryCache.providerConfigRef.kind }}
+{{- end }}

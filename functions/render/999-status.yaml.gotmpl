@@ -1,0 +1,20 @@
+# code: language=yaml
+#
+# Update XR status.
+#
+
+{{- $xr := getCompositeResource . }}
+{{- $s := $state.status }}
+---
+apiVersion: {{ $xr.apiVersion }}
+kind: {{ $xr.kind }}
+status:
+  ready: {{ $s.ready }}
+  registry:
+    id: {{ $s.registry.id | quote }}
+    host: {{ $s.registry.host }}
+  scanning:
+    enabled: {{ $s.scanning.enabled }}
+    scanType: {{ $s.scanning.scanType | quote }}
+  rules:
+    {{- toYaml $s.rules | nindent 4 }}

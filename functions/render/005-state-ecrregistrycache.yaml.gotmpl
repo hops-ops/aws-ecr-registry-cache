@@ -1,0 +1,69 @@
+# code: language=yaml
+#
+# Compute derived registry cache values.
+#
+
+{{- $eff := $state.spec.effective }}
+{{- $registryHost := printf "%s.dkr.ecr.%s.amazonaws.com" $eff.accountId $eff.region }}
+
+# Normalize rule and template defaults once so resource templates stay small.
+{{- $rules := list }}
+{{- range $rule := $eff.rules }}
+  {{- $templateSpec := $rule.repositoryCreationTemplate | default dict }}
+  {{- $templateEnabled := false }}
+  {{- if hasKey $templateSpec "enabled" }}
+    {{- $templateEnabled = $templateSpec.enabled }}
+  {{- end }}
+  {{- $ruleState := dict
+    "name" $rule.name
+    "resourceName" (printf "%s-%s" $eff.name $rule.name)
+    "ecrRepositoryPrefix" $rule.ecrRepositoryPrefix
+    "upstreamRegistryUrl" $rule.upstreamRegistryUrl
+    "credentialArn" ($rule.credentialArn | default "")
+    "customRoleArn" ($rule.customRoleArn | default "")
+    "upstreamRepositoryPrefix" ($rule.upstreamRepositoryPrefix | default "")
+    "forProvider" ($rule.forProvider | default dict)
+    "pullPrefix" (printf "%s/%s" $registryHost $rule.ecrRepositoryPrefix)
+    "repositoryCreationTemplate" (dict
+      "enabled" $templateEnabled
+      "description" ($templateSpec.description | default "")
+      "customRoleArn" ($templateSpec.customRoleArn | default "")
+      "encryptionConfiguration" ($templateSpec.encryptionConfiguration | default list)
+      "imageTagMutability" ($templateSpec.imageTagMutability | default "")
+      "imageTagMutabilityExclusionFilter" ($templateSpec.imageTagMutabilityExclusionFilter | default list)
+      "lifecyclePolicy" ($templateSpec.lifecyclePolicy | default "")
+      "repositoryPolicy" ($templateSpec.repositoryPolicy | default "")
+      "resourceTags" ($templateSpec.resourceTags | default dict)
+    )
+  }}
+  {{- $rules = append $rules $ruleState }}
+{{- end }}
+
+# Default scan filters target only the rule prefixes owned by this XR.
+{{- $repositoryFilters := $eff.enhancedScanning.repositoryFilters }}
+{{- if eq (len $repositoryFilters) 0 }}
+  {{- $repositoryFilters = list }}
+  {{- range $rule := $rules }}
+    {{- $repositoryFilters = append $repositoryFilters (dict
+      "filter" (printf "%s/*" $rule.ecrRepositoryPrefix)
+      "filterType" "WILDCARD"
+    ) }}
+  {{- end }}
+{{- end }}
+
+{{- $state = set $state "ecrRegistryCache" (dict
+  "name" $eff.name
+  "accountId" $eff.accountId
+  "region" $eff.region
+  "registryHost" $registryHost
+  "managementPolicies" $eff.managementPolicies
+  "providerConfigRef" $eff.providerConfigRef
+  "labels" $eff.labels
+  "tags" $eff.tags
+  "rules" $rules
+  "enhancedScanning" (dict
+    "enabled" $eff.enhancedScanning.enabled
+    "scanFrequency" $eff.enhancedScanning.scanFrequency
+    "repositoryFilters" $repositoryFilters
+  )
+) }}

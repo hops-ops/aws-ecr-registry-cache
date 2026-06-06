@@ -1,0 +1,60 @@
+name: on-pr
+
+on:
+  pull_request:
+    branches:
+      - main
+    types:
+      - labeled
+      - opened
+      - reopened
+      - synchronize
+    paths:
+      - '.github/workflows/on-pr.yaml'
+      - '.gitops/**'
+      - 'apis/**'
+      - 'examples/**'
+      - 'tests/**'
+      - 'functions/**'
+      - 'upbound.yaml'
+
+permissions:
+  id-token: write
+  packages: write
+  contents: write
+  issues: write
+  pull-requests: write
+
+jobs:
+  validate:
+    uses: unbounded-tech/workflows-crossplane/.github/workflows/validate.yaml@v2.20.0
+    with:
+      examples: |
+        [
+          { "example": "examples/ecrregistrycaches/standard.yaml" },
+          { "example": "examples/ecrregistrycaches/authenticated-upstreams.yaml" },
+          { "example": "examples/ecrregistrycaches/enhanced-scanning.yaml" }
+        ]
+      api_path: apis/ecrregistrycaches
+      error_on_missing_schemas: true
+
+  test:
+    uses: unbounded-tech/workflows-crossplane/.github/workflows/test.yaml@v2.20.0
+
+  e2e:
+    uses: unbounded-tech/workflows-crossplane/.github/workflows/e2e.yaml@v2.20.0
+    with:
+      aws: true
+      aws-use-oidc: true
+      aws-account-id: "034489662075"
+      aws-region: us-east-2
+      write-env-files: true
+
+  publish:
+    needs:
+      - validate
+      - test
+    uses: unbounded-tech/workflows-crossplane/.github/workflows/publish.yaml@v2.20.0
+    secrets: inherit
+    with:
+      tag: pr-${{ github.event.pull_request.number }}-${{ github.sha }}

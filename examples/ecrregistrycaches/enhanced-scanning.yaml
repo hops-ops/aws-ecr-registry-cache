@@ -1,0 +1,24 @@
+apiVersion: aws.hops.ops.com.ai/v1alpha1
+kind: ECRRegistryCache
+metadata:
+  name: platform-scanned
+  namespace: default
+spec:
+  accountId: "123456789012"
+  region: us-east-2
+  enhancedScanning:
+    enabled: true
+    scanFrequency: SCAN_ON_PUSH
+  rules:
+    - name: ghcr
+      ecrRepositoryPrefix: ghcr
+      upstreamRegistryUrl: ghcr.io
+      credentialArn: arn:aws:secretsmanager:us-east-2:123456789012:secret:ecr-pullthroughcache/ghcr-AbCdEf
+      repositoryCreationTemplate:
+        enabled: true
+    - name: docker-hub
+      ecrRepositoryPrefix: docker-hub
+      upstreamRegistryUrl: registry-1.docker.io
+      credentialArn: arn:aws:secretsmanager:us-east-2:123456789012:secret:ecr-pullthroughcache/docker-hub-AbCdEf
+      repositoryCreationTemplate:
+        enabled: true

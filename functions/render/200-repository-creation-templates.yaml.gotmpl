@@ -1,0 +1,51 @@
+# code: language=yaml
+#
+# ECR repository creation templates for repositories auto-created on first pull.
+#
+
+{{- range $rule := $state.ecrRegistryCache.rules }}
+{{- if $rule.repositoryCreationTemplate.enabled }}
+---
+apiVersion: ecr.aws.m.upbound.io/v1beta1
+kind: RepositoryCreationTemplate
+metadata:
+  name: {{ $rule.resourceName }}
+  annotations:
+    {{ setResourceNameAnnotation (printf "template-%s" $rule.name) }}
+  labels: {{ $state.ecrRegistryCache.labels | toJson }}
+spec:
+  managementPolicies: {{ $state.ecrRegistryCache.managementPolicies | toJson }}
+  forProvider:
+    region: {{ $state.ecrRegistryCache.region }}
+    prefix: {{ $rule.ecrRepositoryPrefix }}
+    appliedFor:
+      - PULL_THROUGH_CACHE
+    resourceTags: {{ $rule.repositoryCreationTemplate.resourceTags | toJson }}
+    {{- if $rule.repositoryCreationTemplate.description }}
+    description: {{ $rule.repositoryCreationTemplate.description | quote }}
+    {{- end }}
+    {{- if $rule.repositoryCreationTemplate.customRoleArn }}
+    customRoleArn: {{ $rule.repositoryCreationTemplate.customRoleArn }}
+    {{- end }}
+    {{- with $rule.repositoryCreationTemplate.encryptionConfiguration }}
+    encryptionConfiguration:
+      {{ toYaml . | nindent 6 }}
+    {{- end }}
+    {{- if $rule.repositoryCreationTemplate.imageTagMutability }}
+    imageTagMutability: {{ $rule.repositoryCreationTemplate.imageTagMutability }}
+    {{- end }}
+    {{- with $rule.repositoryCreationTemplate.imageTagMutabilityExclusionFilter }}
+    imageTagMutabilityExclusionFilter:
+      {{ toYaml . | nindent 6 }}
+    {{- end }}
+    {{- if $rule.repositoryCreationTemplate.lifecyclePolicy }}
+    lifecyclePolicy: {{ $rule.repositoryCreationTemplate.lifecyclePolicy | quote }}
+    {{- end }}
+    {{- if $rule.repositoryCreationTemplate.repositoryPolicy }}
+    repositoryPolicy: {{ $rule.repositoryCreationTemplate.repositoryPolicy | quote }}
+    {{- end }}
+  providerConfigRef:
+    name: {{ $state.ecrRegistryCache.providerConfigRef.name }}
+    kind: {{ $state.ecrRegistryCache.providerConfigRef.kind }}
+{{- end }}
+{{- end }}
