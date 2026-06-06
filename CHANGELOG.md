@@ -1,7 +1,11 @@
-# Changelog
+### What's changed in v0.1.0
 
-## v0.1.0
+* feat: add ecr registry cache configuration (by @patrickleet)
 
-- Initial release of the AWS ECR registry cache configuration.
-- Adds pull-through cache rules for ECR upstream registries.
-- Supports optional repository creation templates and enhanced scanning.
+* chore: add changelog (by @patrickleet)
+
+* ci: include pr workflow in main checks (by @patrickleet)
+
+* ci: update crossplane workflows to v3 (by @patrickleet)
+
+
