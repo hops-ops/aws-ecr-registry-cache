@@ -4,6 +4,7 @@ on:
     branches:
     - main
     paths:
+      - '.github/workflows/on-pr.yaml'
       - '.github/workflows/on-push-main.yaml'
       - '.github/workflows/on-version-tagged.yaml'
       - '.gitops/**'
