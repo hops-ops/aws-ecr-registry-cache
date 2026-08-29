@@ -7,11 +7,11 @@ spec:
   - apiVersion: pkg.crossplane.io/v1
     kind: Function
     package: xpkg.crossplane.io/crossplane-contrib/function-auto-ready
-    version: '>=v0.6.3'
+    version: '>=v0'
   - apiVersion: pkg.crossplane.io/v1
     kind: Provider
     package: xpkg.crossplane.io/crossplane-contrib/provider-aws-ecr
-    version: '>=v2.5.0'
+    version: '>=v2'
   description: Creates ECR pull-through cache rules, optional repository creation
     templates, and optional enhanced scanning for platform image registries.
   license: Apache-2.0
