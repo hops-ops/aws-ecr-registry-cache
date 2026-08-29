@@ -329,6 +329,7 @@ _items = [
                     metadata.name = "platform-ghcr"
                     metadata.annotations = {
                         "crossplane.io/composition-resource-name" = "rule-ghcr"
+                        "gotemplating.fn.crossplane.io/composition-resource-name" = "rule-ghcr"
                     }
                     status.conditions = _ready_conditions
                     status.atProvider = {
