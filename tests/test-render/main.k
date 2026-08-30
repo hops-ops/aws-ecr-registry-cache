@@ -327,9 +327,8 @@ _items = [
                     apiVersion = "ecr.aws.m.upbound.io/v1beta1"
                     kind = "PullThroughCacheRule"
                     metadata.name = "platform-ghcr"
-                    metadata.annotations = {
-                        "crossplane.io/composition-resource-name" = "rule-ghcr"
-                    }
+                    metadata.namespace = "default"
+                    metadata.annotations = {"crossplane.io/composition-resource-name" = "rule-ghcr"}
                     status.conditions = _ready_conditions
                     status.atProvider = {
                         registryId = "123456789012"
